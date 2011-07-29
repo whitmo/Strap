@@ -175,3 +175,10 @@ def package_name(pkg_or_module):
         # it's a package
         return pkg_name
     return pkg_name.rsplit('.', 1)[0]
+
+# so after all that, use the pyramid copy if available
+# else, use ours here
+try:
+    from pyramid.utils import DottedNameResolver
+except ImportError:
+    pass

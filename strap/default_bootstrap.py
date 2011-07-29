@@ -1,44 +1,40 @@
-from path import path
-import os
-import subprocess
+"""
+This code gets inserted into the virtualenv generated bootstrap
+"""
+from extender import BootstrapExtender
 
-#<CONSTANTS># module constants are inserted here
-bundle_path = None
-#</CONSTANTS>#
 
-def sh(command):
+
+class Strap(BootstrapExtender):
     """
-    execute a command 
+    The `BootstrapExtender` class does all the work here.  This class
+    exists for giving you a clear picture of how to write your hooks.
     """
-    return subprocess.call(command.split())
 
-def extend_parser(optparse_parser):
-    """
-    You can add or remove options from the parser here.
-    """
-    print "parser"
-
-
-def adjust_options(options, args):
-##         You can change options here, or change the args (if you accept
-##         different kinds of arguments, be sure you modify ``args`` so it is
-##         only ``[DEST_DIR]``).
-    print "options"
-    pass
-
+    def modify_parser(self, optparse_parser):
+        """
+        Override this method to manipulate the default optparse
+        instance.
+        """
+        pass
     
-def after_install(options, home_dir):
-##         After everything is installed, this function is called.  This
-##         is probably the function you are most likely to use.  An
-##         example would be::
-    
-##             def after_install(options, home_dir):
-##                 subprocess.call([join(home_dir, 'bin', 'easy_install'),
-##                                  'MyPackage'])
-##                 subprocess.call([join(home_dir, 'bin', 'my-package-script'),
-##                                  'setup', home_dir])
-    
-##         This example immediately installs a package, and runs a setup
-##         script from that package.
-    print __file__
-    print "after_install"
+    def adjust_options(self, options, args):
+        """
+        Override to adjust options and args
+        """
+        pass
+
+    def build_hook(self, options, home_dir):
+        """
+        Override this hook to add build steps.  This method is run
+        regardless of whether the virtualenv is created or the bundle
+        is just installed.
+        """
+        pass
+
+
+_strap = Strap(__file__)
+
+extend_parser = _strap.extend_parser
+adjust_options = _strap.adjust_options
+after_install = _strap.after_install
