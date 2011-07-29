@@ -3,14 +3,15 @@ def extend_parser(optparse_parser):
     """
     You can add or remove options from the parser here.
     """
-    print "parser"
+    import pdb;pdb.set_trace()
+    print __file__
 
 
 def adjust_options(options, args):
 ##         You can change options here, or change the args (if you accept
 ##         different kinds of arguments, be sure you modify ``args`` so it is
 ##         only ``[DEST_DIR]``).
-    pass
+    import pdb;pdb.set_trace()
 
     
 def after_install(options, home_dir):
@@ -27,3 +28,4 @@ def after_install(options, home_dir):
 ##         This example immediately installs a package, and runs a setup
 ##         script from that package.
     pass
+    

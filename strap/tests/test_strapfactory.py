@@ -1,7 +1,9 @@
 from itertools import count
 from path import path
-import sys
+import commands
 import inspect
+import os
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -39,7 +41,7 @@ class TestStrapFactory(unittest.TestCase):
     counter = count()
     
     def _makeone(self, et='print "Wheeeeeeee"', bundle=None, reqfile=path(__file__).dirname() / 'testreq.txt'):
-        from strap import StrapFactory
+        from strap.factory import StrapFactory
         if bundle is None:
             td = path(tempfile.mkdtemp())
             bundle = td / 'test_bundle-%s.pybundle' %next(self.counter)
@@ -60,15 +62,11 @@ class TestStrapFactory(unittest.TestCase):
         rp = factory.create_bundle()
         factory.append_to_zip(rp)
         with zipfile.ZipFile(rp, mode='r') as bundle:
-            files = (x.filename for x in reversed(bundle.infolist()))
-            last = next(files)
-            assert '__main__.py' == last, "Last not __main__.py: %s" %bundle.infolist()
-            last = next(files)
-            assert 'bootstrap.py' == last, "Last not bootstrap.py: %s" %bundle.infolist()
-            last = next(files)
-            assert 'path.py' == last, "Last not path.py: %s" %bundle.infolist()
+            files = [x.filename for x in reversed(bundle.infolist())]
+            #@@ import factory and reference class var
+            assert ['bootstrap.py', 'extender.py', '__main__.py', 'path.py'] == files[:4], "Actual filelist: %s" %files[:3]
 
-    def test_execute_bundle(self):
+    def test_bundle_has_bootstrap(self):
         from strap import default_bootstrap
         factory = self._makeone(et=inspect.getsource(default_bootstrap))
         bundle_path = factory.run()
@@ -77,8 +75,13 @@ class TestStrapFactory(unittest.TestCase):
         for func in ('extend_parser', 'adjust_options', 'after_install'):
             assert hasattr(bootstrap, func), "No function %s in %s: %s" %(func, bootstrap, dir(bootstrap))
 
-        
-        
+    def test_bundle_exec(self):
+        env = os.environ['VIRTUAL_ENV']
+        from strap import default_bootstrap
+        factory = self._makeone(et=inspect.getsource(default_bootstrap))
+        (stat, out) = commands.getstatusoutput('%s/bin/python %s' %(env, factory.run()))
+        assert out.find('Successfully installed dummycode') != -1, out
+
     
 
     
