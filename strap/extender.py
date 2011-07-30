@@ -4,7 +4,18 @@ import sys
 
 
 class BootstrapExtender(object):
+    """
+    Extension base class, included in the executable bundle. State bag
+    for virtualenv hook functions.  Basically some reach arounds to
+    help deal with wrapping virtualenv from the inside.
+    """
+    
+    def __init__(self, location, use_distribute=True):
+        self.location = location
+        self.use_distribute = use_distribute
+    
     _subprocess = False
+    
     @property
     def subprocess(self):
         if not self._subprocess:
@@ -12,36 +23,25 @@ class BootstrapExtender(object):
             self._subprocess = call_subprocess
         return self._subprocess
 
-    def __init__(self, location, use_distribute=True):
-        self.location = location
-        self.use_distribute = use_distribute
-
     @property
     def bundle(self):
         # assumes Extender lives in root of pybundle
         return path(self.location).parent
 
-    @property
-    def workon_home(self):
-        venv = os.environ.get('WORKON_HOME')
-        if venv:
-            return path(venv)
-        return None
+##     @property
+##     def workon_home(self):
+# feature is coming
+##         venv = os.environ.get('WORKON_HOME')
+##         if venv:
+##             return path(venv)
+##         return None
 
     @property
     def virtualenv(self):
         venv = os.environ.get('VIRTUAL_ENV')
         if venv:
             return path(venv)
-        return None
 
-    def modify_parser(self, optparse_parser):
-        """
-        Override this method to manipulate the default optparse
-        instance
-        """
-        pass
-    
     def extend_parser(self, optparse_parser):
         """
         As extend_parser is run before any other hook, we can use it
@@ -62,6 +62,10 @@ class BootstrapExtender(object):
         verbosity = options.verbose - options.quiet
         bootstrap.logger = bootstrap.Logger([(bootstrap.Logger.level_for_integer(2-verbosity), sys.stdout)])
 
+    def after_install(self, options, home_dir):
+        self.subprocess("pip install -E %s %s" %(home_dir, self.location))
+        self.build_hook(options, home_dir)
+
     def adjust_options(self, options, args):
         """
         Override to adjust options and args
@@ -73,7 +77,12 @@ class BootstrapExtender(object):
         Override this hook to add build steps
         """
         pass
+
+    def modify_parser(self, optparse_parser):
+        """
+        Override this method to manipulate the default optparse
+        instance
+        """
+        pass
         
-    def after_install(self, options, home_dir):
-        self.subprocess("pip install -E %s %s" %(home_dir, self.location))
-        self.build_hook(options, home_dir)
+

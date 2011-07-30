@@ -1,8 +1,9 @@
 """
-This code gets inserted into the virtualenv generated bootstrap
+Text inserted into the virtualenv generated bootstrap
+
+`Strap` is a protocol stub. Define your own `Strap` to extend
 """
 from extender import BootstrapExtender
-
 
 
 class Strap(BootstrapExtender):

@@ -1,4 +1,5 @@
 from itertools import count
+from mock import patch
 from path import path
 import commands
 import inspect
@@ -37,7 +38,6 @@ class TestStrapFactory(unittest.TestCase):
     """
     Test the main class
     """
-
     counter = count()
     
     def _makeone(self, et='print "Wheeeeeeee"', bundle=None, reqfile=path(__file__).dirname() / 'testreq.txt'):
@@ -47,11 +47,26 @@ class TestStrapFactory(unittest.TestCase):
             bundle = td / 'test_bundle-%s.pybundle' %next(self.counter)
         return StrapFactory(et, bundle, reqfile)
 
+    @patch('argparse.ArgumentParser.add_argument')
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_argparser(self, parse_mock, add_mock):
+        factory = self._makeone()
+        blah = factory.argparser()
+        assert blah
+        assert parse_mock.call_args_list == [((), {})]
+        assert set(x[0][0] for x in add_mock.call_args_list) == set(['-h', 'bundle_name', '-e', '-r'])
+
     def test_init(self):
         factory = self._makeone('','','')
         assert factory
-        
-    def test_createbundle(self):
+
+    @patch('sys.exit')
+    def test_createbundle(self, exit_mock):
+        factory = self._makeone(reqfile='idonotexist')
+        factory.create_bundle()
+        exit_mock.assert_called_once_with(256)
+
+    def test_createbundle_fail(self):
         factory = self._makeone()
         rp = factory.create_bundle()
         assert rp.exists(), "%s does not exist." %rp 
@@ -74,6 +89,7 @@ class TestStrapFactory(unittest.TestCase):
         import bootstrap
         for func in ('extend_parser', 'adjust_options', 'after_install'):
             assert hasattr(bootstrap, func), "No function %s in %s: %s" %(func, bootstrap, dir(bootstrap))
+        del sys.path[0]
 
     def test_bundle_exec(self):
         env = os.environ['VIRTUAL_ENV']
@@ -81,6 +97,7 @@ class TestStrapFactory(unittest.TestCase):
         factory = self._makeone(et=inspect.getsource(default_bootstrap))
         (stat, out) = commands.getstatusoutput('%s/bin/python %s' %(env, factory.run()))
         assert out.find('Successfully installed dummycode') != -1, out
+
 
     
 

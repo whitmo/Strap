@@ -1,7 +1,7 @@
-from fabric.api import local
 from path import path
 from strap.resolver import DottedNameResolver
 import argparse
+import commands
 import inspect
 import logging
 import sys
@@ -26,15 +26,13 @@ class StrapFactory(object):
         self.requirements_file = requirements_file
         self.modules = modules
 
-
-
     @staticmethod
     def argparser(*args, **kw):
         parser = argparse.ArgumentParser(description='This is STRAP')
+        parser.add_argument('bundle_name', action="store")
         parser.add_argument('-e', action="store", dest="extra_text", default='strap.default_bootstrap')
         parser.add_argument('-r', action="store", dest="requirements_file",
                             default=None, required=True)
-        parser.add_argument('bundle_name', action="store", required=True)
         return parser.parse_args(*args, **kw)        
 
     def append_to_zip(self, bundle_path):
@@ -47,11 +45,16 @@ class StrapFactory(object):
                 if mod is not None:
                     bundle.writestr(mod_name, inspect.getsource(mod))
                 else:
-                    logger.error("%s does not return a module" %spec)
+                    #@@ negative test
+                    logger.error("%s does not return a module", spec)
             bundle.writestr('bootstrap.py', virtualenv.create_bootstrap_script(self.extra_text))
 
     def create_bundle(self):
-        local('pip bundle -r %s %s' %(self.requirements_file, self.bundle_name))
+        (stat, out) = commands.getstatusoutput('pip bundle -r %s %s' %(self.requirements_file, self.bundle_name))
+        if stat != 0:
+            #@@ negative test
+            logger.error("%s\n", out)
+            sys.exit(stat)
         return path('.').abspath() / self.bundle_name
 
     @staticmethod
@@ -72,7 +75,6 @@ class StrapFactory(object):
         if module and inspect.ismodule(module):
             return path(inspect.getsourcefile(module)).text()
         return et # just a string
-
 
     @property
     def extra_text(self):
