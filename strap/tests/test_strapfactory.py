@@ -54,7 +54,7 @@ class TestStrapFactory(unittest.TestCase):
         blah = factory.argparser()
         assert blah
         assert parse_mock.call_args_list == [((), {})]
-        assert set(x[0][0] for x in add_mock.call_args_list) == set(['-h', 'bundle_name', '-e', '-r'])
+        assert set(x[0][0] for x in add_mock.call_args_list) == set(['-h', 'packages', '-n', '-p', '-c', '-r', '-v', '-m'])
 
     def test_init(self):
         factory = self._makeone('','','')
@@ -64,7 +64,7 @@ class TestStrapFactory(unittest.TestCase):
     def test_createbundle(self, exit_mock):
         factory = self._makeone(reqfile='idonotexist')
         factory.create_bundle()
-        exit_mock.assert_called_once_with(256)
+        exit_mock.assert_called_once_with(1)
 
     def test_createbundle_fail(self):
         factory = self._makeone()

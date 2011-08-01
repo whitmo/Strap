@@ -1,10 +1,10 @@
 from path import path
+import sys
+from process import Process
 from strap.resolver import DottedNameResolver
 import argparse
-import commands
 import inspect
 import logging
-import sys
 import virtualenv
 import zipfile
 
@@ -19,20 +19,29 @@ class StrapFactory(object):
     default_modules = [('path.py', 'path'),
                        ('__main__.py', 'strap._main_'),
                        ('extender.py', 'strap.extender')]
+    process = Process
     
-    def __init__(self, extra_text, bundle_name, requirements_file, modules=default_modules):
+    def __init__(self, extra_text, bundle_name, packages, requirements_file=None, modules=default_modules, logger=logger):
         self.text_spec = extra_text
-        self.bundle_name = bundle_name
         self.requirements_file = requirements_file
+        self.bundle_name = bundle_name
+        self.packages = packages
         self.modules = modules
+        self.logger = logger
+
+    def determine_requirements(self, specs):
+        pass
 
     @staticmethod
     def argparser(*args, **kw):
         parser = argparse.ArgumentParser(description='This is STRAP')
-        parser.add_argument('bundle_name', action="store")
-        parser.add_argument('-e', action="store", dest="extra_text", default='strap.default_bootstrap')
-        parser.add_argument('-r', action="store", dest="requirements_file",
-                            default=None, required=True)
+        parser.add_argument('packages', action="store", dest="requirements_file")
+        parser.add_argument('-n', dest='bundle_name', action="store")
+        parser.add_argument('-p', dest='pip_options', action="store")
+        parser.add_argument('-c', dest='config_file', action="store")
+        parser.add_argument('-r', dest='requirements_file', action="store", default='')
+        parser.add_argument('-v', dest='virtualenv_options', action="store")
+        parser.add_argument('-m', action="store", dest="extra_text", default='strap.default_bootstrap')
         return parser.parse_args(*args, **kw)        
 
     def append_to_zip(self, bundle_path):
@@ -49,12 +58,21 @@ class StrapFactory(object):
                     logger.error("%s does not return a module", spec)
             bundle.writestr('bootstrap.py', virtualenv.create_bootstrap_script(self.extra_text))
 
+    @property
+    def pip_options(self):
+        pass
+
     def create_bundle(self):
-        (stat, out) = commands.getstatusoutput('pip bundle -r %s %s' %(self.requirements_file, self.bundle_name))
-        if stat != 0:
-            #@@ negative test
-            logger.error("%s\n", out)
-            sys.exit(stat)
+        arguments = dict(pip_options=self.pip_options or '',
+                         packages=self.packages,
+                         requires = self.requirements_file and "-r %s" %self.requirements_file or '',
+                         bundle_name=self.bundle_name)
+        cmd = 'pip bundle %(pip_options)s -r %(requires)s %(packages)s %(bundle_name)s' %arguments
+        try:
+            self.process(cmd, self.logger).run()
+        except OSError, e:
+            self.logger.error("%s", e)
+            sys.exit(e.retcode)
         return path('.').abspath() / self.bundle_name
 
     @staticmethod
@@ -96,8 +114,16 @@ class StrapFactory(object):
         -e extra text to resolve
         -r requirements file
         """
-        if args is None:
-            args = sys.argv
-        args = cls.argparser(args)
-        factory = cls(args.extra_text, args.bundle_name, args.requirements_file)
+        if args is not None:
+            options = cls.argparser(args=args)
+        else:
+            options = cls.argparser()
+        factory = cls(options.extra_text, options.bundle_name, options.packages, options.requirements_file)
         return factory.run()
+
+
+
+
+
+
+

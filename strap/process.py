@@ -59,26 +59,39 @@ class Process(object):
             cmd_parts.append(part)
         return ' '.join(cmd_parts)
 
-    def yield_output(self):
-        stdout = self.proc.stdout
-        while 1:
-            if not stdout:
-                raise StopIteration()
-            line = stdout.readline()
-            if not line:
-                break
+    def handle_output(self, *streams):
+        for stream in streams:
+            if not stream:
+                yield None
+                continue
+            line = stream.readline()
             line = line.rstrip()
             yield line
-            if self.filter_stdout:
-                level = self.filter_stdout(line)
-                if isinstance(level, tuple):
-                    level, line = level
-                self.logger.log(level, line)
-## @@ todo            
-##                 if not self.logger.stdout_level_matches(level):
-##                     logger.show_progress()
-            else:
-                self.logger.info(line)
+
+    def filter_logging(self, line):
+        level = self.filter_stdout(line)
+        if isinstance(level, tuple):
+            level, line = level
+        self.logger.log(level, line)
+
+    def yield_output(self):
+        stdout = self.proc.stdout
+        stderr = self.proc.stderr
+        while 1:
+            if not stdout or stderr:
+                raise StopIteration()
+            stderr_line, stdout_line = lines = self.read_streams(stdout, stderr)
+            if not any(lines):
+                break
+            for line in lines:
+                if line is not None:
+                    if self.filter_stdout:
+                        self.filter_logging(line)
+                    else:
+                        self.logger.info(line)                        
+                    yield line
+
+    long_format = "%s\n----------------------------------------"
 
     def run(self):
         """
@@ -94,10 +107,12 @@ class Process(object):
         if self.proc.returncode:
             if self.raise_on_returncode:
                 if all_output:
-                    self.logger.notify('Complete output from command %s:', self.command_desc)
-                    self.logger.notify('\n'.join(all_output) + '\n----------------------------------------')
-                raise OSError("Command %s failed with error code %s"
+                    self.logger.notify('All output from command %s:', self.command_desc)
+                    self.logger.notify(self.long_format % '\n'.join(all_output))
+                error = OSError("Command %s failed with error code %s"
                               %(self.command_desc, self.proc.returncode))
+                error.retcode = self.proc.returncode
+                raise error
             else:
                 self.logger.warn("Command %s had error code %s", self.command_desc, self.proc.returncode)
         if self.return_output:
