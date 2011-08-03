@@ -40,12 +40,12 @@ class TestStrapFactory(unittest.TestCase):
     """
     counter = count()
     
-    def _makeone(self, et='print "Wheeeeeeee"', bundle=None, reqfile=path(__file__).dirname() / 'testreq.txt'):
+    def _makeone(self, et='print "Wheeeeeeee"', packages='', bundle=None, reqfile=path(__file__).dirname() / 'testreq.txt'):
         from strap.factory import StrapFactory
         if bundle is None:
             td = path(tempfile.mkdtemp())
             bundle = td / 'test_bundle-%s.pybundle' %next(self.counter)
-        return StrapFactory(et, bundle, reqfile)
+        return StrapFactory(et, packages, reqfile, bundle)
 
     @patch('argparse.ArgumentParser.add_argument')
     @patch('argparse.ArgumentParser.parse_args')

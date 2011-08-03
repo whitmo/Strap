@@ -1,10 +1,11 @@
 from path import path
-import sys
 from process import Process
 from strap.resolver import DottedNameResolver
 import argparse
 import inspect
 import logging
+import pkg_resources
+import sys
 import virtualenv
 import zipfile
 
@@ -15,27 +16,36 @@ resolve = DottedNameResolver(None).maybe_resolve
 
 class StrapFactory(object):
 
-    const_slug = "<CONSTANTS>"
     default_modules = [('path.py', 'path'),
                        ('__main__.py', 'strap._main_'),
                        ('extender.py', 'strap.extender')]
     process = Process
     
-    def __init__(self, extra_text, bundle_name, packages, requirements_file=None, modules=default_modules, logger=logger):
+    def __init__(self, extra_text, packages, requirements_file=None, bundle_name=None, modules=default_modules, logger=logger):
         self.text_spec = extra_text
         self.requirements_file = requirements_file
-        self.bundle_name = bundle_name
         self.packages = packages
         self.modules = modules
         self.logger = logger
+        self.bundle_name = self.make_bundle_name(bundle_name)
 
-    def determine_requirements(self, specs):
-        pass
+    def make_bundle_name(self, bundle_name):
+        if bundle_name is not None:
+            if not bundle_name.endswith('pybundle'):
+                return "%s.pybundle" %bundle_name
+            return bundle_name
+        
+        if self.requirements_file:
+            return "%s.pybundle" %path(self.requirements_file).namebase
+
+        if self.packages:
+            pkg_list = pkg_resources.parse_requirements('\n'.join(self.packages.split()))
+            return "%s.pybundle" % '_'.join(x.project_name for x in pkg_list)
 
     @staticmethod
     def argparser(*args, **kw):
         parser = argparse.ArgumentParser(description='This is STRAP')
-        parser.add_argument('packages', action="store", dest="requirements_file")
+        parser.add_argument('packages', action="store", dest="packages")
         parser.add_argument('-n', dest='bundle_name', action="store")
         parser.add_argument('-p', dest='pip_options', action="store")
         parser.add_argument('-c', dest='config_file', action="store")
@@ -54,20 +64,20 @@ class StrapFactory(object):
                 if mod is not None:
                     bundle.writestr(mod_name, inspect.getsource(mod))
                 else:
-                    #@@ negative test
+                    #@@ needs negative test
                     logger.error("%s does not return a module", spec)
             bundle.writestr('bootstrap.py', virtualenv.create_bootstrap_script(self.extra_text))
 
     @property
     def pip_options(self):
-        pass
+        pass            
 
     def create_bundle(self):
         arguments = dict(pip_options=self.pip_options or '',
                          packages=self.packages,
-                         requires = self.requirements_file and "-r %s" %self.requirements_file or '',
+                         requires=self.requirements_file and "-r %s" %self.requirements_file or '',
                          bundle_name=self.bundle_name)
-        cmd = 'pip bundle %(pip_options)s -r %(requires)s %(packages)s %(bundle_name)s' %arguments
+        cmd = 'pip bundle %(pip_options)s %(requires)s %(packages)s %(bundle_name)s' %arguments
         try:
             self.process(cmd, self.logger).run()
         except OSError, e:
@@ -92,6 +102,7 @@ class StrapFactory(object):
             pass
         if module and inspect.ismodule(module):
             return path(inspect.getsourcefile(module)).text()
+        assert isinstance(et, basestring)
         return et # just a string
 
     @property
