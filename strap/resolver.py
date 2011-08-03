@@ -176,6 +176,8 @@ def package_name(pkg_or_module):
         return pkg_name
     return pkg_name.rsplit('.', 1)[0]
 
+_dotted_name_resolver = DottedNameResolver
+
 # so after all that, use the pyramid copy if available
 # else, use ours here
 try:
