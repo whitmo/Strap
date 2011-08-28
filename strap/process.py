@@ -1,12 +1,19 @@
-import subprocess
+"""
+@@ api needs refactoring
+- move init calls to run
+"""
+
+from StringIO import StringIO
 import os
+import subprocess
+import sys
 
 
 class Process(object):
     """
     A slight refactoring of virtualenv.call_subprocess
     """
-    def __init__(self, cmd, logger, show_stdout=True,
+    def __init__(self, cmd, logger, stdout=True, stdin=None,
                  filter_stdout=None, cwd=None,
                  raise_on_returncode=True, extra_env=None,
                  remove_from_env=None, return_output=False):
@@ -14,9 +21,11 @@ class Process(object):
             cmd = [str(x) for x in cmd.split()]
         self.cmd = cmd
         self.logger = logger
-        self.show_stdout = show_stdout
-        self.stdout = None
-        if not show_stdout:
+        self.stdout = stdout is True and sys.stdout or stdout
+        if stdout is False:
+            self.stdout = StringIO()
+        self.stdin = stdin is True and sys.stdin or stdin 
+        if not stdout:
             self.stdout = subprocess.PIPE
         self.filter_stdout=filter_stdout
         self.cwd=cwd
@@ -41,8 +50,10 @@ class Process(object):
     def proc(self):
         if self._proc is None:
             try:
-                self._proc = subprocess.Popen(
-                    self.cmd, stderr=subprocess.STDOUT, stdin=None, stdout=self.stdout,
+                stdin = isinstance(self.stdin, file) and self.stdin.fileno() or self.stdin
+                stdout = isinstance(self.stdout, file) and self.stdout.fileno() or self.stdout
+                self._proc = subprocess.Popen(self.cmd, stderr=subprocess.STDOUT,
+                                              stdin=stdin, stdout=stdout,
                     cwd=self.cwd, env=self.env)
             except Exception, e:
                 self.logger.fatal("Error %s while executing command %s" % (e, self.command_desc))
@@ -59,15 +70,6 @@ class Process(object):
             cmd_parts.append(part)
         return ' '.join(cmd_parts)
 
-    def handle_output(self, *streams):
-        for stream in streams:
-            if not stream:
-                yield None
-                continue
-            line = stream.readline()
-            line = line.rstrip()
-            yield line
-
     def filter_logging(self, line):
         level = self.filter_stdout(line)
         if isinstance(level, tuple):
@@ -77,13 +79,14 @@ class Process(object):
     def yield_output(self):
         stdout = self.proc.stdout
         stderr = self.proc.stderr
+        if not stdout or stderr:
+            raise StopIteration()
         while 1:
-            if not stdout or stderr:
-                raise StopIteration()
-            stderr_line, stdout_line = lines = self.read_streams(stdout, stderr)
-            if not any(lines):
-                break
-            for line in lines:
+            for stream in stderr, stdout,:
+                if not stream:
+                    continue
+                line = next(stream)
+                line = line.rstrip()
                 if line is not None:
                     if self.filter_stdout:
                         self.filter_logging(line)
@@ -95,11 +98,11 @@ class Process(object):
 
     def run(self):
         """
-        It's what you do right?
+        Do it! Do it now!
         """
         all_output = []
         self.logger.debug("Running command %s", self.command_desc)
-        if self.show_stdout is not None:
+        if self.stdout is not None:
             all_output = [x for x in self.yield_output()]
         else:
             self.proc.communicate()
