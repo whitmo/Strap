@@ -120,11 +120,6 @@ class StrapFactory(object):
 
     @classmethod
     def main(cls, args=None):
-        """
-        bundle name
-        -e extra text to resolve
-        -r requirements file
-        """
         if args is not None:
             options = cls.argparser(args=args)
         else:

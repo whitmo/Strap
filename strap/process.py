@@ -1,6 +1,7 @@
 """
 @@ api needs refactoring
 - move init calls to run
+zozo- clean up input options
 """
 
 from StringIO import StringIO
