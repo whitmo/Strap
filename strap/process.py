@@ -1,9 +1,8 @@
 """
 @@ api needs refactoring
 - move init calls to run
-zozo- clean up input options
+- clean up input options
 """
-
 from StringIO import StringIO
 import os
 import subprocess
@@ -28,7 +27,7 @@ class Process(object):
         self.stdin = stdin is True and sys.stdin or stdin 
         if not stdout:
             self.stdout = subprocess.PIPE
-        self.filter_stdout=filter_stdout
+        self.filter_stdout = filter_stdout
         self.cwd=cwd
         self.raise_on_returncode=raise_on_returncode
         self.env = self.prep_env(extra_env, remove_from_env)
