@@ -29,29 +29,36 @@ class StrapFactory(object):
         self.logger = logger
         self.bundle_name = self.make_bundle_name(bundle_name)
 
-    def make_bundle_name(self, bundle_name):
-        if bundle_name is not None:
+    def make_bundle_name(self, bundle_name, template="%s.strap.pybundle"):
+        if bundle_name:
             if not bundle_name.endswith('pybundle'):
-                return "%s.pybundle" %bundle_name
+                return template % bundle_name
             return bundle_name
         
         if self.requirements_file:
-            return "%s.pybundle" %path(self.requirements_file).namebase
+            return template % path(self.requirements_file).namebase
 
         if self.packages:
             pkg_list = pkg_resources.parse_requirements('\n'.join(self.packages.split()))
-            return "%s.pybundle" % '_'.join(x.project_name for x in pkg_list)
+            return template % '_'.join(x.project_name for x in pkg_list)
 
     @staticmethod
     def argparser(*args, **kw):
-        parser = argparse.ArgumentParser(description='This is STRAP')
-        parser.add_argument('packages', action="store", dest="packages")
-        parser.add_argument('-n', dest='bundle_name', action="store")
-        parser.add_argument('-p', dest='pip_options', action="store")
-        parser.add_argument('-c', dest='config_file', action="store")
-        parser.add_argument('-r', dest='requirements_file', action="store", default='')
-        parser.add_argument('-v', dest='virtualenv_options', action="store")
-        parser.add_argument('-m', action="store", dest="extra_text", default='strap.default_bootstrap')
+        parser = argparse.ArgumentParser(description='This is STRAP: creates executable bundles ' \
+                                         'that creates loaded virtualenvs.')
+        parser.add_argument('packages', action="store")
+        parser.add_argument('-n', dest='bundle_name', action="store",
+                            help='Name of output bundle')
+        parser.add_argument('-p', dest='pip_options', action="store",
+                            help='options for running pip to create bundle')
+        parser.add_argument('-c', dest='config_file', action="store",
+                            help="NotImplemented")
+        parser.add_argument('-r', dest='requirements_file', action="store", default='',
+                            help="A pip requirements file")
+        parser.add_argument('-v', dest='virtualenv_options', action="store",
+                            help='Any options you want passed to virtualenv creation')
+        parser.add_argument('-m', action="store", dest="extra_text", default='strap.default_bootstrap',
+                            help="dotted name for a module providing the extension api")
         return parser.parse_args(*args, **kw)        
 
     def append_to_zip(self, bundle_path):
@@ -77,7 +84,7 @@ class StrapFactory(object):
                          packages=self.packages,
                          requires=self.requirements_file and "-r %s" %self.requirements_file or '',
                          bundle_name=self.bundle_name)
-        cmd = 'pip bundle %(pip_options)s %(requires)s %(packages)s %(bundle_name)s' %arguments
+        cmd = 'pip bundle %(pip_options)s %(requires)s %(bundle_name)s %(packages)s' %arguments
         try:
             self.process(cmd, self.logger).run()
         except OSError, e:
@@ -118,14 +125,30 @@ class StrapFactory(object):
         self.append_to_zip(bundle_path)
         return bundle_path
 
+    def setup_logger(self, format="%(message)s", level=logging.INFO):
+        root = logging.getLogger()
+        if root.handlers:
+            root.handlers = []
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter(format))
+        root.setLevel(level)
+        root.addHandler(ch)
+        return root
+
     @classmethod
     def main(cls, args=None):
         if args is not None:
             options = cls.argparser(args=args)
         else:
             options = cls.argparser()
-        factory = cls(options.extra_text, options.bundle_name, options.packages, options.requirements_file)
-        return factory.run()
+        
+        try:
+            factory = cls(options.extra_text, options.packages, options.bundle_name, options.requirements_file)
+            factory.setup_logger() # set level, format
+            return factory.run()
+        except :
+            import pdb, sys; pdb.post_mortem(sys.exc_info()[2])
+
 
 
 
