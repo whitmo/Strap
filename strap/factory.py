@@ -142,12 +142,10 @@ class StrapFactory(object):
         else:
             options = cls.argparser()
         
-        try:
-            factory = cls(options.extra_text, options.packages, options.bundle_name, options.requirements_file)
-            factory.setup_logger() # set level, format
-            return factory.run()
-        except :
-            import pdb, sys; pdb.post_mortem(sys.exc_info()[2])
+        factory = cls(options.extra_text, options.packages, options.bundle_name, options.requirements_file)
+        factory.setup_logger() # set level, format
+        return factory.run()
+
 
 
 
