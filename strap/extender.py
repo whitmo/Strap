@@ -11,7 +11,7 @@ class BootstrapExtender(object):
     """
     
     def __init__(self, location, use_distribute=True):
-        self.location = location
+        self.location = path(location).parent.abspath()
         self.use_distribute = use_distribute
     
     _subprocess = False
@@ -52,7 +52,7 @@ class BootstrapExtender(object):
         if self.virtualenv:
             options, args = optparse_parser.parse_args()
             self.setup_logger_global(options)
-            self.subprocess(('pip install %s' %self.bundle).split())
+            self.subprocess(('pip install %s' %self.bundle).split(' '))
             self.adjust_options(options, args)
             self.build_hook(options, self.virtualenv)
             sys.exit(0)
@@ -63,7 +63,8 @@ class BootstrapExtender(object):
         bootstrap.logger = bootstrap.Logger([(bootstrap.Logger.level_for_integer(2-verbosity), sys.stdout)])
 
     def after_install(self, options, home_dir):
-        self.subprocess("pip install -E %s %s" %(home_dir, self.location))
+        cmd = "%(home_dir)s/bin/pip install -E %(home_dir)s %(location)s" %dict(home_dir=home_dir, location=self.location)
+        self.subprocess(cmd.split(' '))
         self.build_hook(options, home_dir)
 
     def adjust_options(self, options, args):
@@ -76,7 +77,7 @@ class BootstrapExtender(object):
         """
         Override this hook to add build steps
         """
-        pass
+        print "this is a message".upper()
 
     def modify_parser(self, optparse_parser):
         """
