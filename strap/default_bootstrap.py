@@ -4,14 +4,23 @@ Text inserted into the virtualenv generated bootstrap
 `Strap` is a protocol stub. Define your own `Strap` to extend
 """
 from extender import BootstrapExtender
-
+import textwrap
 
 class Strap(BootstrapExtender):
     """
     The `BootstrapExtender` class does all the work here.  This class
     exists for giving you a clear picture of how to write your hooks.
     """
+    default_message = """
+    Environment created and populated. To activate environment:
 
+      $ cd %s
+      $ . bin/activate
+
+    Installed packages
+    ==================
+    """
+    
     def modify_parser(self, optparse_parser):
         """
         Override this method to manipulate the default optparse
@@ -31,7 +40,10 @@ class Strap(BootstrapExtender):
         regardless of whether the virtualenv is created or the bundle
         is just installed.
         """
-        pass
+
+        print textwrap.dedent(self.default_message % home_dir)
+        cmd = "%(home_dir)s/bin/pip freeze -lE %(home_dir)s " %dict(home_dir=home_dir)
+        self.subprocess(cmd.split(' '))
 
 
 _strap = Strap(__file__)
