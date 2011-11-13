@@ -98,7 +98,8 @@ class Process(object):
 
     def run(self):
         """
-        Do it! Do it now!
+        Run the subprocess based on state established on
+        initialization.
         """
         all_output = []
         self.logger.debug("Running command %s", self.command_desc)
