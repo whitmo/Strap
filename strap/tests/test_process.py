@@ -64,7 +64,6 @@ class TestProcessRunner(unittest.TestCase):
         proc.run()
         assert proc.logger.log.call_args[0][0] is logging.WARN
 
-
     @raises(OSError)
     def test_garbage_call(self):
         proc = self._make_one('something_that_doesnt_exist --canIhaz --error', stdout=False, return_output=True)
