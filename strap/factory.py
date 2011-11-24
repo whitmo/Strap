@@ -19,11 +19,12 @@ class StrapFactory(object):
     default_modules = [('path.py', 'path'),
                        ('__main__.py', 'strap._main_'),
                        ('extender.py', 'strap.extender')]
+
     process = Process
     
-    def __init__(self, extra_text, packages, requirements_file=None, bundle_name=None, modules=default_modules, logger=logger):
+    def __init__(self, extra_text, packages, requirements_files=[], bundle_name=None, modules=default_modules, logger=logger):
         self.text_spec = extra_text
-        self.requirements_file = requirements_file
+        self.requirements_files = [x.lstrip() for x in requirements_files]
         self.packages = packages
         self.modules = modules
         self.logger = logger
@@ -35,30 +36,46 @@ class StrapFactory(object):
                 return template % bundle_name
             return bundle_name
         
-        if self.requirements_file:
-            return template % path(self.requirements_file).namebase
+        if self.requirements_files:
+            return template % path(self.requirements_files[0]).namebase
 
         if self.packages:
-            pkg_list = pkg_resources.parse_requirements('\n'.join(self.packages.split()))
+            pkg_list = pkg_resources.parse_requirements('\n'.join(self.packages))
             return template % '_'.join(x.project_name for x in pkg_list)
 
     @staticmethod
     def argparser(*args, **kw):
-        parser = argparse.ArgumentParser(description='This is STRAP: creates executable bundles ' \
-                                         'that creates loaded virtualenvs.')
-        parser.add_argument('packages', action="store")
-        parser.add_argument('-n', dest='bundle_name', action="store",
+        parser = argparse.ArgumentParser(description="""
+        STRAP creates executable python bundles that create populated
+        virtualenvs.
+        """)
+        parser.add_argument('packages', nargs='*', metavar="PKG_SPEC",
+                            default=None,
+                            help="0-N package specifications."), 
+        parser.add_argument('-n', dest='bundle_name',
                             help='Name of output bundle')
-        parser.add_argument('-p', dest='pip_options', action="store",
-                            help='options for running pip to create bundle')
-        parser.add_argument('-c', dest='config_file', action="store",
-                            help="NotImplemented")
-        parser.add_argument('-r', dest='requirements_file', action="store", default='',
-                            help="A pip requirements file")
-        parser.add_argument('-v', dest='virtualenv_options', action="store",
-                            help='Any options you want passed to virtualenv creation')
-        parser.add_argument('-m', action="store", dest="extra_text", default='strap.default_bootstrap',
-                            help="dotted name for a module providing the extension api")
+
+# unimplemented options
+##         parser.add_argument('-p', dest='pip_options',
+##                             help="""
+##                             options for running pip to create bundle
+##                             ex: find_links, index, etc.
+##                             """)
+##        parser.add_argument('-c', dest='config_file',
+##                             help="NotImplemented")
+##         parser.add_argument('-e', dest='editable_reqs',
+##                             default=[], action='append',
+##                             metavar="LOCAL_OR_VCS_SRC",
+##                             help="A file system or vcs source tree. May be used multiple times.")
+##         parser.add_argument('-v', dest='virtualenv_options', metavar='VENV_OPT',
+##                             help='Any options you want passed to virtualenv creation.')
+        
+        parser.add_argument('-r', dest='requirements_file',
+                            default=[], action='append',
+                            help="A pip requirements file.  Mayb be used multiple times.")
+
+        parser.add_argument('-m', dest="extra_text", default='strap.default_bootstrap',
+                            help="dotted name for a module providing the extension api.")
         return parser.parse_args(*args, **kw)        
 
     def append_to_zip(self, bundle_path):
@@ -80,11 +97,16 @@ class StrapFactory(object):
         pass            
 
     def create_bundle(self):
+        requirements_files = None
+        if self.requirements_files and not isinstance(self.requirements_files, basestring):
+            requirements_files = "-r %s" % " -r ".join(self.requirements_files)
+
         arguments = dict(pip_options=self.pip_options or '',
-                         packages=self.packages,
-                         requires=self.requirements_file and "-r %s" %self.requirements_file or '',
+                         packages=' '.join(self.packages),
+                         requires=requirements_files or '',
                          bundle_name=self.bundle_name)
         cmd = 'pip bundle %(pip_options)s %(requires)s %(bundle_name)s %(packages)s' %arguments
+        cmd = cmd.replace('  ', ' ')
         try:
             self.process(cmd, self.logger).run()
         except OSError, e:
@@ -138,11 +160,11 @@ class StrapFactory(object):
     @classmethod
     def main(cls, args=None):
         if args is not None:
-            options = cls.argparser(args=args)
+            options = cls.argparser(args)
         else:
             options = cls.argparser()
         
-        factory = cls(options.extra_text, options.packages, options.bundle_name, options.requirements_file)
+        factory = cls(options.extra_text, options.packages, options.requirements_file, options.bundle_name)
         factory.setup_logger() # set level, format
         return factory.run()
 

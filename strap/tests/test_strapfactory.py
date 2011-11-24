@@ -39,8 +39,9 @@ class TestStrapFactory(unittest.TestCase):
     Test the main class
     """
     counter = count()
+    reqfile = path(__file__).dirname() / 'testreq.txt'
     
-    def _makeone(self, et='print "Wheeeeeeee"', packages='', bundle=None, reqfile=path(__file__).dirname() / 'testreq.txt'):
+    def _makeone(self, et='print "Wheeeeeeee"', packages='', bundle=None, reqfile=[reqfile]):
         from strap.factory import StrapFactory
         if bundle is None:
             td = path(tempfile.mkdtemp())
@@ -54,19 +55,19 @@ class TestStrapFactory(unittest.TestCase):
         blah = factory.argparser()
         assert blah
         assert parse_mock.call_args_list == [((), {})]
-        assert set(x[0][0] for x in add_mock.call_args_list) == set(['-h', 'packages', '-n', '-p', '-c', '-r', '-v', '-m'])
+        assert set(x[0][0] for x in add_mock.call_args_list) == set(['-h', 'packages', '-n', '-r', '-m']), set(x[0][0] for x in add_mock.call_args_list)
 
     def test_init(self):
         factory = self._makeone('','','')
         assert factory
 
     @patch('sys.exit')
-    def test_createbundle(self, exit_mock):
-        factory = self._makeone(reqfile='idonotexist')
+    def test_createbundle_fail_no_req(self, exit_mock):
+        factory = self._makeone(reqfile=['idonotexist'])
         factory.create_bundle()
         exit_mock.assert_called_once_with(1)
 
-    def test_createbundle_fail(self):
+    def test_createbundle(self):
         factory = self._makeone()
         rp = factory.create_bundle()
         assert rp.exists(), "%s does not exist." %rp 
@@ -95,10 +96,15 @@ class TestStrapFactory(unittest.TestCase):
         env = os.environ['VIRTUAL_ENV']
         from strap import default_bootstrap
         factory = self._makeone(et=inspect.getsource(default_bootstrap))
-        (stat, out) = commands.getstatusoutput('%s/bin/python %s' %(env, factory.run()))
+        filename = factory.run()
+
+        (stat, out) = commands.getstatusoutput('%s/bin/python %s' %(env, filename))
         assert out.find('Successfully installed dummycode') != -1, out
 
-
+    def test_main(self):
+        from strap import default_bootstrap
+        factory = self._makeone(et=inspect.getsource(default_bootstrap))
+        factory.main(['-r %s' %self.reqfile])
     
 
     
