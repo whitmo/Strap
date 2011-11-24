@@ -21,9 +21,9 @@ class TestBootstrapExtender(unittest.TestCase):
         assert be.subprocess.__module__ == 'strap.bootstrap'
         assert be.subprocess() is None
 
-    def test_bundle_prop(self):
-        be = self._make_one('tests/testreq.txt')
-        assert be.bundle.abspath().name == 'tests', be.bundle.name
+##     def test_bundle_prop(self):
+##         be = self._make_one('tests/testreq.txt')
+##         assert be.bundle.abspath().name == 'tests', be.bundle.name
 
     def test_virtualenv_prop(self):
         """
