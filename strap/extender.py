@@ -26,7 +26,10 @@ class BootstrapExtender(object):
     @property
     def bundle(self):
         # assumes Extender lives in root of pybundle
-        return path(self.location).parent
+        parent = path(self.location).parent
+        if parent.endswith('pybundle'):
+            return parent
+        return self.location
 
 ##     @property
 ##     def workon_home(self):
@@ -78,6 +81,13 @@ class BootstrapExtender(object):
         Override this hook to add build steps
         """
         print "this is a message".upper()
+
+    def install_distribute(self, py_executable, unzip=False):
+        """
+        * unpack distribute
+        * install distribute
+        """
+        import pdb;pdb.set_trace()
 
     def modify_parser(self, optparse_parser):
         """
