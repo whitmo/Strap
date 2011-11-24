@@ -56,6 +56,7 @@ class StrapFactory(object):
                             help='Name of output bundle')
 
 # unimplemented options
+## @@ consider -o for output directory
 ##         parser.add_argument('-p', dest='pip_options',
 ##                             help="""
 ##                             options for running pip to create bundle

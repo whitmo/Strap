@@ -104,7 +104,8 @@ class TestStrapFactory(unittest.TestCase):
     def test_main(self):
         from strap import default_bootstrap
         factory = self._makeone(et=inspect.getsource(default_bootstrap))
-        factory.main(['-r %s' %self.reqfile])
-    
+        bp = factory.main(['-r %s' %self.reqfile])
+        assert bp.exists(), "%s does not exist" %bp
+        bp.remove()
 
     
