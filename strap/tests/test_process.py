@@ -1,7 +1,5 @@
 from mock import Mock
 from nose.tools import raises
-from mock import patch
-from path import path
 import unittest
 from strap.tests import pushd
 import logging
