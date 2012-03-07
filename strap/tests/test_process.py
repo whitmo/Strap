@@ -1,8 +1,9 @@
 from mock import Mock
 from nose.tools import raises
-import unittest
 from strap.tests import pushd
 import logging
+import unittest
+
 
 class TestProcessRunner(unittest.TestCase):
     

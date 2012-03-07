@@ -4,16 +4,20 @@
 - clean up input options
 """
 from StringIO import StringIO
+import logging
 import os
 import subprocess
 import sys
+
+
+logger = logging.getLogger(__name__)
 
 
 class Process(object):
     """
     A slight refactoring of virtualenv.call_subprocess
     """
-    def __init__(self, cmd, logger, stdout=True, stdin=None,
+    def __init__(self, cmd, logger=logger, stdout=True, stdin=None,
                  filter_stdout=None, cwd=None,
                  raise_on_returncode=True, extra_env=None,
                  remove_from_env=None, return_output=False):

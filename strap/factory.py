@@ -32,6 +32,7 @@ class StrapFactory(object):
 
     def make_bundle_name(self, bundle_name, template="%s.strap.pybundle"):
         if bundle_name:
+            bundle_name = bundle_name.lstrip()
             if not bundle_name.endswith('pybundle'):
                 return template % bundle_name
             return bundle_name
@@ -101,7 +102,6 @@ class StrapFactory(object):
         requirements_files = None
         if self.requirements_files and not isinstance(self.requirements_files, basestring):
             requirements_files = "-r %s" % " -r ".join(self.requirements_files)
-
         arguments = dict(pip_options=self.pip_options or '',
                          packages=' '.join(self.packages),
                          requires=requirements_files or '',
@@ -113,6 +113,8 @@ class StrapFactory(object):
         except OSError, e:
             self.logger.error("%s", e)
             sys.exit(e.retcode)
+        if self.bundle_name.startswith('/'):
+            return path(self.bundle_name)
         return path('.').abspath() / self.bundle_name
 
     @staticmethod
