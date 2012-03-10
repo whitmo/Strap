@@ -3,7 +3,6 @@
 - move init calls to run
 - clean up input options
 """
-from StringIO import StringIO
 import logging
 import os
 import subprocess
@@ -17,7 +16,7 @@ class Process(object):
     """
     A slight refactoring of virtualenv.call_subprocess
     """
-    def __init__(self, cmd, logger=logger, stdout=True, stdin=None,
+    def __init__(self, cmd, logger=logger, stdout=True, stderr=None, shell=False, stdin=None,
                  filter_stdout=None, cwd=None,
                  raise_on_returncode=True, extra_env=None,
                  remove_from_env=None, return_output=False):
@@ -25,12 +24,17 @@ class Process(object):
             cmd = [str(x) for x in cmd.split()]
         self.cmd = cmd
         self.logger = logger
-        self.stdout = stdout is True and sys.stdout or stdout
-        if stdout is False:
-            self.stdout = StringIO()
-        self.stdin = stdin is True and sys.stdin or stdin 
+        self.stdout = stdout
+        if stdout is True:
+            self.stdout = sys.stdout
         if not stdout:
             self.stdout = subprocess.PIPE
+        if stdout is False:
+            self.stdout = open('/dev/null')
+            
+        self.stderr = stderr
+        self.stdin = stdin is True and sys.stdin or stdin 
+
         self.filter_stdout = filter_stdout
         self.cwd=cwd
         self.raise_on_returncode=raise_on_returncode
@@ -38,6 +42,7 @@ class Process(object):
         self._proc = None
         self.command_desc = self.make_command_desc()
         self.return_output = return_output
+        self.shell = shell
 
     def prep_env(self, extra_env=None, remove_from_env=None):
         env = None
@@ -54,11 +59,21 @@ class Process(object):
     def proc(self):
         if self._proc is None:
             try:
-                stdin = isinstance(self.stdin, file) and self.stdin.fileno() or self.stdin
-                stdout = isinstance(self.stdout, file) and self.stdout.fileno() or self.stdout
-                self._proc = subprocess.Popen(self.cmd, stderr=subprocess.STDOUT,
+                stdin = self.stdin
+                if isinstance(self.stdin, file):
+                    stdin = self.stdin.fileno()  
+                stdout = self.stdout
+                stderr = subprocess.PIPE
+                if isinstance(self.stdout, file):
+                    stdout = self.stdout.fileno()
+                if self.return_output:
+                    stdout = subprocess.PIPE
+                    stdin = subprocess.PIPE
+                    stderr = subprocess.PIPE
+                    import pdb;pdb.set_trace()
+                self._proc = subprocess.Popen(self.cmd, stderr=stderr,
                                               stdin=stdin, stdout=stdout,
-                    cwd=self.cwd, env=self.env)
+                                              cwd=self.cwd, env=self.env, shell=self.shell)
             except Exception, e:
                 self.logger.fatal("Error %s while executing command %s" % (e, self.command_desc))
                 raise
@@ -100,14 +115,14 @@ class Process(object):
 
     long_format = "%s\n----------------------------------------"
 
-    def run(self):
+    def run(self, capture=False, quiet=False):
         """
         Run the subprocess based on state established on
         initialization.
         """
         all_output = []
         self.logger.debug("Running command %s", self.command_desc)
-        if self.stdout is not None:
+        if not self.stdout is None:
             all_output = [x for x in self.yield_output()]
         else:
             self.proc.communicate()

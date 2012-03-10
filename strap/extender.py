@@ -1,4 +1,5 @@
 from path import path
+import subprocess
 import os
 import sys
 
@@ -66,8 +67,8 @@ class BootstrapExtender(object):
         bootstrap.logger = bootstrap.Logger([(bootstrap.Logger.level_for_integer(2-verbosity), sys.stdout)])
 
     def after_install(self, options, home_dir):
-        cmd = "%(home_dir)s/bin/pip install -E %(home_dir)s %(location)s" %dict(home_dir=home_dir, location=self.location)
-        self.subprocess(cmd.split(' '))
+        cmd = ". %(home_dir)s/bin/activate && %(home_dir)s/bin/pip install %(location)s" %dict(home_dir=home_dir, location=self.location)
+        subprocess.check_call(cmd, shell=True)
         self.build_hook(options, home_dir)
 
     def adjust_options(self, options, args):

@@ -1,6 +1,9 @@
 from contextlib import contextmanager
+from path import path
 import os
+import logging
 
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def pushd(dir):
@@ -24,3 +27,9 @@ def pushd(dir):
         yield old_dir
     finally:
         os.chdir(old_dir)
+
+
+def teardown():
+    venv = path(os.environ['VIRTUAL_ENV'])
+    cleaned = len([bb.rmtree() for bb in venv.dirs('build-bundle*')])
+    logger.info('%s build-bundles cleaned', cleaned)
