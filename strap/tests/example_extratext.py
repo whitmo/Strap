@@ -3,7 +3,7 @@ def extend_parser(optparse_parser):
     """
     You can add or remove options from the parser here.
     """
-    import pdb;pdb.set_trace()
+    #import pdb;pdb.set_trace()
     print __file__
 
 
@@ -11,7 +11,8 @@ def adjust_options(options, args):
 ##         You can change options here, or change the args (if you accept
 ##         different kinds of arguments, be sure you modify ``args`` so it is
 ##         only ``[DEST_DIR]``).
-    import pdb;pdb.set_trace()
+    #import pdb;pdb.set_trace()
+    pass
 
     
 def after_install(options, home_dir):

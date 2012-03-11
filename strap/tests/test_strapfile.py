@@ -37,10 +37,10 @@ class TestStrapFile(unittest.TestCase):
         
         #proc = process.Process("python %s %s" %(bundle_path, outvenv), logger_mock, return_output=True)
         #output = proc.run()
-        import pdb;pdb.set_trace()        
+        #import pdb;pdb.set_trace()        
 
     def find_non_venv_python(self):
         import pdb;pdb.set_trace()
         pythons = self.proc('which -a python', return_output=True).run().split('\n')
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         

@@ -70,7 +70,6 @@ class Process(object):
                     stdout = subprocess.PIPE
                     stdin = subprocess.PIPE
                     stderr = subprocess.PIPE
-                    import pdb;pdb.set_trace()
                 self._proc = subprocess.Popen(self.cmd, stderr=stderr,
                                               stdin=stdin, stdout=stdout,
                                               cwd=self.cwd, env=self.env, shell=self.shell)

@@ -88,7 +88,8 @@ class BootstrapExtender(object):
         * unpack distribute
         * install distribute
         """
-        import pdb;pdb.set_trace()
+        pass
+        #import pdb;pdb.set_trace()
 
     def modify_parser(self, optparse_parser):
         """

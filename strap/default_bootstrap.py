@@ -4,6 +4,7 @@ Text inserted into the virtualenv generated bootstrap
 `Strap` is a protocol stub. Define your own `Strap` to extend
 """
 from extender import BootstrapExtender
+import subprocess
 import sys
 import textwrap
 
@@ -45,8 +46,8 @@ class Strap(BootstrapExtender):
         sys.stdout.write('\n')
         sys.stdout.write(textwrap.dedent(self.default_message % home_dir))
         sys.stdout.write('\n')
-        cmd = "%(home_dir)s/bin/pip freeze -lE %(home_dir)s " %dict(home_dir=home_dir)
-        self.subprocess(cmd.split(' '))
+        cmd = ". %(home_dir)s/bin/activate && %(home_dir)s/bin/pip freeze -l" %dict(home_dir=home_dir)
+        subprocess.check_call(cmd, shell=True)
 
 
 _strap = Strap(__file__)
