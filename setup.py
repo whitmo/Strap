@@ -1,4 +1,5 @@
-from setuptools import setup, find_packages
+from setuptools import setup
+from setuptools import find_packages
 
 version = '0.1'
 
@@ -6,11 +7,11 @@ setup(name='Strap',
       version=version,
       description="A bootstrap creator",
       long_description=""" """,
-      classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      classifiers=[], 
       keywords='',
       author='whit at surveymonkey.com',
       author_email='whit at surveymonkey.com',
-      url='',
+      url='http://strap.github.com',
       license='MIT',
       packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
       include_package_data=True,
